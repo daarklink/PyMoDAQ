@@ -125,6 +125,7 @@ class ManagerBase(CustomExt):
 
         self.splash_subentries: Optional[SubEntriesSplash] = None
         self.subentries_model: Optional[ManagerSubEntriesModel] = None
+        self._updating_entry = False
 
         #first create the object
         self.entries_sync = WidgetSync(
@@ -460,13 +461,16 @@ class ManagerBase(CustomExt):
         """ Get the name of the last entry that has been successfully applied/executed """
         return self._applied_entry_name
 
-    def execute_entry(self, entry_path: Path = None, **kwargs):
+    def execute_entry(self, entry_path: str | Path = None, **kwargs):
         """ To be called to execute the selected entry """
         if entry_path is None:
             self.save_check(self.entry, bypass_dialog=True)
             entry_path = self.entry_filepath
 
-        self.update_entry(entry_path.stem)
+        if isinstance(entry_path, str):
+            entry_path = self.entry_path_from_name(entry_path)
+
+        self.update_entry(entry_path)
 
         if self.dashboard is None:
             logger.info(f"Cannot Load {self.entry_type.capitalize()} file: {entry_path.stem} as no Dashboard is initialized")
@@ -497,18 +501,26 @@ class ManagerBase(CustomExt):
 
     def update_entry(self, entry: Union[str, Path] = None, **kwargs):
         """ Load and display the given entry """
-        if entry is None:
-            if self.entry is None:
-                return
-            entry = self.entry_filepath
-        elif isinstance(entry, str):
-            entry = self.entry_path_from_name(entry)
+        if self._updating_entry:
+            return
+        self._updating_entry = True
+        try:
+            if entry is None:
+                if self.entry is None:
+                    return
+                entry = self.entry_filepath
+            elif isinstance(entry, str):
+                entry = self.entry_path_from_name(entry)
 
-        self.entry = entry.stem  # make sure the combo is updated (if triggered not from the combo, in particular the action slots)
+            self.entry = entry.stem  # syncs the combo; if called from an action slot this fires
+                                     # value_changed → lambda → update_entry (re-entrant, blocked above)
+                                     # but value_changed sync-to-widget still runs → external combos updated
 
-        self._update_entry(entry)
-        self.update_execute_action_tooltip(entry.stem)
-        self.updated_entry.emit(entry.stem)
+            self._update_entry(entry)
+            self.update_execute_action_tooltip(entry.stem)
+            self.updated_entry.emit(entry.stem)
+        finally:
+            self._updating_entry = False
 
     def _update_entry(self, entry_path: Path):
         """ Particular implementation to update entries for this inherited Manager """
