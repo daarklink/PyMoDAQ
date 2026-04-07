@@ -394,12 +394,7 @@ class Launcher(CustomApp):
         -------
 
         """
-        # self.dashboard, self._dashboard_extension, self._dashboard_shared_ui = load_dashboard_with_preset(
-        #     preset_name=self.preset_manager.entry,
-        #     configuration_name=self.configurator.entry,
-        # )
         subprocess.Popen(['dashboard', '-p', self.preset_manager.entry, '-c', self.configurator.entry])
-        self._dashboard_shared_ui.show()
 
 
     def do_navigate(self, index: int):
