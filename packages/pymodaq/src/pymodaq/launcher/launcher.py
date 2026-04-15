@@ -77,7 +77,7 @@ class Launcher(CustomApp):
         self.experiment_manager = self.configurator.experiment_manager
         self._launcher_experiment_external_combo = None
 
-        self.extension_manager = ExtensionManager()
+        self.extension_manager = ExtensionManager(subprocess=True)
 
         # Layout
         self.main_hbox = QHBoxLayout()

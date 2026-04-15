@@ -21,10 +21,11 @@ class ExtensionManager(ManagerBase):
     entry_type = 'extension'
     entry_extension = '.xml'
 
-    def __init__(self, dashboard: 'DashBoard' = None):
+    def __init__(self, dashboard: 'DashBoard' = None, subprocess : bool = False):
         self.extension_catalog = get_extensions()
         self.loaded_extensions: dict[ExtensionEnum, CustomExt] = {}
         self._internal_dashboard_ui = None
+        self.subprocess = subprocess
 
         super().__init__(dashboard=dashboard)
 
@@ -83,6 +84,26 @@ class ExtensionManager(ManagerBase):
     def load_extension(self, ext_enum: ExtensionEnum,
                       win: QtWidgets.QMainWindow = None) -> CustomExt | None:
         """Load and display an extension."""
+
+        if self.subprocess:
+            # Launch in separate process by calling extension's main()
+            import multiprocessing as mp
+            logger.info(f"Launching extension {ext_enum.value} in separate process")
+
+            # Get the extension class and its module
+            ext_class = self.extension_catalog[ext_enum].klass
+            ext_module = sys.modules[ext_class.__module__]
+
+            # Call main() in a separate process
+            if hasattr(ext_module, 'main'):
+                process = mp.Process(target=ext_module.main)
+                process.start()
+                return None
+            else:
+                logger.error(f"Extension {ext_enum.value} has no main() function")
+                return None
+
+        # Load in current process
         try:
             shared_ui, ext_module = create_extension(
                 self.dashboard,

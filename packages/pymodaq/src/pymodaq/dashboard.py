@@ -232,7 +232,7 @@ class DashBoard(CustomApp, LECOComponentMixin):
         self.overshooter.get_external_toolbar_menu(toolbar=self.get_toolbar('overshooter'),
                                                    menu=self.get_menu('overshooter'))
 
-        self.extension_manager = ExtensionManager(dashboard=self)
+        self.extension_manager = ExtensionManager(dashboard=self, subprocess=False)
         self.extension_manager.get_external_toolbar_menu(toolbar=self.get_toolbar('extension'))
 
         self.affect_to(self.experiment_manager.get_action(ManagerActions.NEW), self.get_menu(MenuNames.FILE))
